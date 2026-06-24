@@ -37,9 +37,6 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     h1 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.5rem; }
     p { color: #888; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1rem; }
-    .success-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    .fail-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-    .status-code { font-family: monospace; font-size: 0.8rem; color: #555; margin-top: 0.5rem; }
     .hidden { display: none; }
   </style>
 </head>
@@ -47,21 +44,8 @@
   <div class="card">
     <div id="status-processing">
       <div class="spinner"></div>
-      <h1>Completing Authorization…</h1>
-      <p>Forwarding your Etsy authorization code to the local server. This should take a second.</p>
-    </div>
-
-    <div id="status-success" class="hidden">
-      <div class="success-icon">✅</div>
-      <h1>Etsy Connected!</h1>
-      <p>OB Bleu-Prints is now authorized. You can close this tab.</p>
-    </div>
-
-    <div id="status-failed" class="hidden">
-      <div class="fail-icon">❌</div>
-      <h1>Relay Failed</h1>
-      <p id="fail-message">Could not reach the local server. The tunnel may have changed.</p>
-      <button onclick="retry()" style="margin-top:1rem;background:#00d4ff;border:none;border-radius:6px;padding:0.6rem 1.5rem;font-weight:600;cursor:pointer;color:#000;">Retry</button>
+      <h1>Redirecting…</h1>
+      <p>Forwarding your Etsy authorization code to the local server.</p>
     </div>
 
     <div id="status-no-code" class="hidden">
@@ -74,48 +58,15 @@
   <script>
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
-    // Use OAuth state parameter to carry the tunnel forward URL
-    const forward = params.get('state') || '';
+    const forward = params.get('state');
 
-    async function doRelay() {
-      if (!code) {
-        document.getElementById('status-processing').classList.add('hidden');
-        document.getElementById('status-no-code').classList.remove('hidden');
-        return;
-      }
-
-      if (!forward || forward === '') {
-        document.getElementById('status-processing').classList.add('hidden');
-        document.getElementById('status-success').classList.remove('hidden');
-        return;
-      }
-
-      try {
-        const response = await fetch(forward + '?code=' + encodeURIComponent(code), {
-          method: 'GET',
-          headers: { 'Accept': 'application/json' }
-        });
-
-        if (response.ok) {
-          document.getElementById('status-processing').classList.add('hidden');
-          document.getElementById('status-success').classList.remove('hidden');
-        } else {
-          throw new Error('Server returned ' + response.status);
-        }
-      } catch (err) {
-        document.getElementById('status-processing').classList.add('hidden');
-        document.getElementById('status-failed').classList.remove('hidden');
-        document.getElementById('fail-message').textContent = err.message || 'Could not reach server. Tunnel may have changed.';
-      }
+    if (code && forward) {
+      // No CORS issues — browser redirects directly to the tunnel
+      window.location.href = forward + '?code=' + encodeURIComponent(code);
+    } else {
+      document.getElementById('status-processing').classList.add('hidden');
+      document.getElementById('status-no-code').classList.remove('hidden');
     }
-
-    function retry() {
-      document.getElementById('status-failed').classList.add('hidden');
-      document.getElementById('status-processing').classList.remove('hidden');
-      doRelay();
-    }
-
-    doRelay();
   </script>
 </body>
 </html>
